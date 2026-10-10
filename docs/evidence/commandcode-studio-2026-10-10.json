@@ -1,0 +1,130 @@
+{
+  "verifiedAt": "2026-10-10",
+  "scope": "personal-account; organization success responses not tested",
+  "evidenceClasses": {
+    "S": "Official Studio scripts at the listed SHA-256; static call sites and schemas.",
+    "V_UI": "Signed-in rendered UI observations; does not verify raw API JSON.",
+    "V_ERROR": "Unauthenticated HTTP responses from a standalone curl program."
+  },
+  "sources": [
+    {
+      "url": "https://commandcode.ai/assets/constants--Sqc_cVk.js",
+      "sha256": "ca4907fce9eabda5affccb41b9ddc16d764bd055bcd9d33bedff126673a0ccb5"
+    },
+    {
+      "url": "https://commandcode.ai/assets/use-billing-data-DNgjEtyb.js",
+      "sha256": "7454796e2f0367ace6a1284775ae28e10001a3927e00931b6f2a3a657a601bcd"
+    },
+    {
+      "url": "https://commandcode.ai/assets/usage-C1KUGoNk.js",
+      "sha256": "1ae2abb2035dc215ae043c3e26416ea548b3527f22ef1ec583e06db5bbf56bdd"
+    },
+    {
+      "url": "https://commandcode.ai/assets/monthly-usage-meter-D8LUvbNx.js",
+      "sha256": "5c2bf4cbbf14b6ba1d56696fb005fd2eda6a49262b9082fae148bca6ecf76828"
+    },
+    {
+      "url": "https://commandcode.ai/assets/billing-Bs7MZgwR.js",
+      "sha256": "691050a9739497470bd62f633bc7ae867cdb6131d05ac26b7e9f10c8607205d5"
+    }
+  ],
+  "uiObservations": {
+    "signedIn": true,
+    "activeSubscriptionVisible": true,
+    "monthlyUsageMeterVisible": true,
+    "independentNextPaymentDateVisible": false,
+    "requestRowsVisible": true,
+    "modelBillingPeriodAggregationVisible": true,
+    "cacheBreakdownColumnVisible": false,
+    "pagination": {
+      "selectedPageSize": 100,
+      "visibleRequestRows": 100,
+      "olderDisabled": true,
+      "newerDisabled": true,
+      "billingSummaryCountExceedsVisibleRequestRows": true,
+      "reason": "Not established; no successful raw response captured."
+    }
+  },
+  "httpTests": [
+    {
+      "method": "GET",
+      "origin": "https://api.commandcode.ai",
+      "path": "/internal/billing/credits",
+      "authentication": "none",
+      "status": 401,
+      "response": {
+        "success": false,
+        "error": {
+          "code": "UNAUTHORIZED",
+          "status": 401,
+          "message": "You're logged out. Please refresh and login.",
+          "docs": "https://commandcode.ai/docs/reference/errors/unauthorized"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "origin": "https://api.commandcode.ai",
+      "path": "/internal/billing/subscriptions?withPending=true",
+      "authentication": "none",
+      "status": 401,
+      "response": {
+        "success": false,
+        "error": {
+          "code": "UNAUTHORIZED",
+          "status": 401,
+          "message": "You're logged out. Please refresh and login.",
+          "docs": "https://commandcode.ai/docs/reference/errors/unauthorized"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "origin": "https://api.commandcode.ai",
+      "path": "/internal/usage?limit=10",
+      "authentication": "none",
+      "status": 401,
+      "response": {
+        "success": false,
+        "error": {
+          "code": "UNAUTHORIZED",
+          "status": 401,
+          "message": "You're logged out. Please refresh and login.",
+          "docs": "https://commandcode.ai/docs/reference/errors/unauthorized"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "origin": "https://api.commandcode.ai",
+      "path": "/internal/usage/charts?granularity=day&period=billing",
+      "authentication": "none",
+      "status": 401,
+      "response": {
+        "success": false,
+        "error": {
+          "code": "UNAUTHORIZED",
+          "status": 401,
+          "message": "You're logged out. Please refresh and login.",
+          "docs": "https://commandcode.ai/docs/reference/errors/unauthorized"
+        }
+      }
+    }
+  ],
+  "browserDirectApiNavigation": {
+    "path": "/internal/billing/credits",
+    "result": "ERR_BLOCKED_BY_CLIENT",
+    "classification": "Browser/client navigation restriction; no evidence of site bot detection."
+  },
+  "unverified": [
+    "Successful API response shape and values",
+    "API Key access to internal endpoints",
+    "Account-wide historical coverage and pagination termination",
+    "Cache field presence in list meta",
+    "Day-bucket time zone and from/to filtering",
+    "Software/client identity",
+    "monthlyCreditsGranted semantics on the tested account",
+    "Independent next payment date; reset date minus one day"
+  ],
+  "redaction": "No credentials, account names, account IDs, trace IDs, invoice identifiers or account financial values retained."
+}
