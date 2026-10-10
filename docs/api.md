@@ -4,22 +4,22 @@
 
 ## 1. 接入结论
 
-公开资料能够确定本地会话、用量事件和 API Key 的使用方式；官方 npm 发布包能够确定账户、余额、订阅和账期汇总的读取接口；Token Monitor 源码补充了使用网页 Cookie 的 `/internal/billing/*` 接入方式。**现有证据不足以通过公开、稳定的 HTTP API 完整实现全部需求。**
+公开资料能够确定本地会话、用量事件和 API Key 的使用方式；官方 npm 发布包能够确定账户、余额、订阅和账期汇总的读取接口；Token Monitor 源码补充了使用网页 Cookie 的 `/internal/billing/*` 接入方式；固定哈希的官方 Studio 脚本进一步确认历史列表、按日模型统计及 `monthlyCreditsGranted` 候选字段。**现有证据不足以通过公开、稳定的 HTTP API 完整实现全部需求。**
 
 | 数据能力 | 已确认的入口 | 可实现范围 | 缺口 |
 | --- | --- | --- | --- |
 | 登录与身份 | Studio API Key；`GET /alpha/whoami` | 验证密钥，识别用户与组织 | 第三方浏览器登录协议未公开 |
 | 套餐 | `/alpha/billing/subscriptions`；网页 `/internal/billing/subscriptions` | 套餐 ID、订阅状态、当前账期 | 显示名称须维护版本映射；下次付款日期未确认 |
 | 5h、周额度 | `/alpha/billing/credits`；网页 `/internal/billing/credits` | 已用、上限、重置时间；第三方仓库有标注为 Go 实际抓取的样本 | 真实账户响应与不同套餐仍需联调 |
-| 月额度 | 余额与订阅接口 | 月度剩余额度、账期起止；Token Monitor 用静态套餐表补分母 | 缺少经确认的服务端月额度上限或已用比例，静态表不能替代账户事实 |
+| 月额度 | CC05／CC06；官方 Studio 余额脚本 | 月度剩余、账期及服务端 `monthlyCreditsGranted` 候选字段 | 真实字段值与额度语义未联调；网页百分比仍结合静态套餐下限，不能直接当服务端比例 |
 | 本地日、周、月统计及排行 | 会话 JSONL；Mods 用量事件 | 本地已记录请求的时间、模型、输入、缓存读取、输出 | 本地记录不等于账户全量记录；账户归属、复制去重需验证 |
-| 账户全量历史明细 | Studio Usage 页面具备逐请求展示 | 确认产品存在此能力 | 明细路径、鉴权、分页、时间过滤、软件来源与缓存字段未确认 |
+| 账户历史与模型统计 | CC07–CC09；官方 Studio 脚本 | 已定位 Cookie GET、游标分页、按日模型聚合及缓存字段候选 | 成功响应、历史覆盖、时区、软件来源及缓存字段实际值未验证；网页分页不能证明账户全量 |
 
 ### 是否需要逆向 Command Code
 
 1. 接入官方会话文件和 Mods 事件，不需要反编译 CLI；字段细节可用固定版本的发布包辅助核验。
 2. 账户额度有两条未文档化路径：CLI 的 API Key＋`/alpha/*`，Token Monitor 的网页 Cookie＋`/internal/billing/*`。前者已通过官方发布包静态分析确认，后者可直接参考开源实现，不需要再为定位这两个网页接口逆向 CLI；两者均需真实账户联调。
-3. Token Monitor 没有提供账户全量明细、服务端月额度上限或独立付款日期接口。完整覆盖这些字段仍需核验本人已登录的 Studio 请求或取得官方说明，不能由其月额度进度条反推这些 API 已存在。
+3. Token Monitor 没有提供历史明细、服务端月分母或独立付款日期接口。官方 Studio 脚本已补充明细、按日模型聚合及月度发放额度候选契约，见 4.6；成功响应与覆盖范围仍需联调，软件来源和独立付款日期继续保持 U 级。
 4. 不把本地统计自动替换成账户全量统计，不把账期汇总改名为本日、本周、本月。需求及验收标准保持不变；缺少数据时按 D04、E02、E03 显示对应状态。
 
 ## 2. 证据等级与来源
@@ -27,12 +27,12 @@
 | 等级 | 含义 | 开发使用规则 |
 | --- | --- | --- |
 | P | 官方公开文档明确说明 | 可据此设计适配器；响应仍需校验 |
-| S | 固定版本官方发布包静态确认 | 只在版本化适配器中使用，联调通过前不标记已验证 |
+| S | 固定版本官方发布包或固定哈希的官方网页脚本静态确认 | 只在版本化适配器中使用，联调通过前不标记已验证 |
 | R | 固定提交的第三方源码、测试或作者标注的抓取样本 | 可作为接入依据；区分源码事实、模拟样本与作者报告，不提升为本项目 V 级证据 |
 | V | 使用真实账户或会话样本验证 | 必须保存脱敏样本、版本、验证日期和结果 |
 | U | 未确认 | 不猜测路径、字段、单位或返回结构 |
 
-目前没有 V 级证据：环境未配置 Command Code 凭据，也没有真实会话样本。下列结构是客户端消费契约，不是完整的服务端 OpenAPI Schema。
+已有真实登录页面及未认证接口错误的 V 级证据，见 [脱敏核验记录](evidence/commandcode-studio-2026-10-10.json)。V 级页面观察不等于成功 JSON 响应验证；程序环境没有 API Key 或网页 Cookie，CC01–CC10 的成功响应仍未取得。下列结构是客户端消费契约，不是完整的服务端 OpenAPI Schema。
 
 | 来源 | 用途 |
 | --- | --- |
@@ -150,7 +150,7 @@ CC01、CC02、CC04 使用根对象；CC03 的订阅在 `data` 内。不要统一
 
 ### 4.3 月限制与日期处理
 
-月限制必须来自经确认的账户 `used + cap`、`remaining + cap` 或直接比例，以及对应月限制周期。字段名在验证前保持 U 级，不预设 `/alpha/billing/limits` 等路径。
+月限制必须来自经确认的账户 `used + cap`、`remaining + cap` 或直接比例，以及对应月限制周期。官方 Studio 静态代码读取 `credits.monthlyCreditsGranted`，已作为 S 级候选月分母定位；成功样本验证前不提升为 V 级，不预设其他路径。
 
 CLI 的展示逻辑结合本地套餐表、余额和费用构造进度；本项目不复用此推算：余额可能含充值，费用也不一定等于额度消耗。不得从官网价格表硬编码账户月限额。
 
@@ -223,6 +223,31 @@ Token Monitor 同样没有从接口获取月度上限，而是用 `planId` 查�
 
 这两个入口纳入 `CommandCodeWebAccountAdapter` 的候选契约，保留与 API Key 适配器的凭据／缓存隔离。订阅 ID 或 Cookie 哈希只能作为临时来源身份，不能当作稳定用户 ID；无法验证身份时不得将 Cookie 数据与 API Key 账户合并。完成 API10 联调后，才把网页凭据接入第 6 节应用服务；现有 API Key 登录契约不变。
 
+### 4.6 官方 Studio 网页契约（S 级，2026-10-10）
+
+官方网页脚本以 `https://api.commandcode.ai` 为基础地址，以下读取均使用 GET 与 `credentials: "include"`。API Key 能否读取这些 internal 入口未验证。个人账户省略 `orgId`；`targetUserId` 是网页管理员查看其他用户时使用的参数，普通客户端不据此扩展账户作用域。
+
+| 接口标识 | 方法与路径 | 网页发送的参数 | 静态消费契约 |
+| --- | --- | --- | --- |
+| CC07 | `GET /internal/usage` | `limit`、可选 `cursor`、`orgId`、`targetUserId` | 根部 `usages[]`、`nextCursor`、`window`；列表读取 `id`、`createdAt`、`tokensIn`、`tokensOut`、`durationTotal`、`mode`、`status`、`meta.model`、`meta.traceId` |
+| CC08 | `GET /internal/usage/charts` | `granularity=day`；网页模型表使用 `period=billing`；未传 period 时可传 `from` 和 `to`；可选账户作用域参数 | `success`、`data[]`、`window.from/to/periodBasis`；按模型与日的聚合 |
+| CC09 | `GET /internal/usage/summary` | 可选账户作用域参数 | 根部汇总消费 `totalCount`、`totalTokensIn`、`totalTokensOut`、`totalTokens`、`totalCost`、`periodBasis`；客户端默认值不能视为真实响应 |
+| CC10 | `GET /internal/billing/customers/invoices` | `limit=10`、可选 `starting_after` 和账户作用域参数 | `success`、`data.invoices[]`、`data.hasMore`；下一页使用末条账单 ID |
+
+CC05 的网页读取函数接受 `orgId`、`targetUserId`，读取根部 `windowLimits` 以及 `credits.monthlyCreditsGranted`。CC06 使用 `withPending=true`，还读取订阅 `quantity`。这是官方网页调用行为，真实组织权限与字段值保持待验证。
+
+**缓存与统计：** CC08 的官方共享响应 schema 声明 `model`、`provider`、`timeBucket`、`requests`、`tokensIn`、`tokensOut`、`tokensTotal`、`cacheReadInputTokens`、`cacheCreationInputTokens`、费用和消耗字段。列表表头的官方说明明确输入包含未缓存输入、缓存读取和缓存写入，因此候选映射为 `uncachedInput = tokensIn - cacheReadInputTokens`，缓存写入不能另加。列表展示本身没有缓存细分列；日志写入 schema 的缓存字段不能自动视为 CC07 的真实 `meta` 字段，必须用成功响应确认。
+
+CC08 支持显式 from/to 的客户端分支，但参数格式、服务端过滤、区间边界和日桶时区未联调。按日桶不能直接保证任意本地时区的自然日／周／月边界。其分组 schema 没有真实软件名称；`provider` 是模型供应商，`mode=api/agent` 是调用模式，均不能替代 Claude Code、Codex 等软件身份。
+
+**月分母：** `monthly-usage-meter` 的代码优先读取正数 `monthlyCreditsGranted`，却仍取它与静态套餐 `limits.totalCredits` 的较大值；无有效 granted 值时回退静态套餐，组织再乘席位数。页面整数比例经过四舍五入与 0–100% 钳制。因此网页进度条不能证明服务端返回了原始百分比，也不能原样满足 E03。应用候选分母只能使用经验证的账户 granted 值，不照搬静态下限或零值回退。
+
+**历史与付款：** CC07 的页面消费 `window.days`，空态提示“最近活动窗口”；分页终止采用 `nextCursor`，不能据此断言窗口之外没有调用。真实页面在选择每页 100 条后禁用“较早”，且账期汇总计数超过这 100 条；原因可能来自响应覆盖或分页行为，尚未取得 JSON，不能判定服务端只保留 100 条。订阅共享 schema 仅确认账期、取消状态和待生效变更，没有独立下次付款字段；历史已支付账单也不能证明下一次扣款日期。重置日期减一天保持未验证的规则，不能写入 `nextPaymentAt`。
+
+**实测边界：** 已登录网页显示有效订阅、三个窗口进度、模型统计和逐请求列表。独立程序实际请求 CC05、CC06（withPending=true）、CC07（limit=10）、CC08（granularity=day&period=billing），均取得 HTTP 401 与 `UNAUTHORIZED`，证明入口可达且未认证请求被拒绝。没有把 401 当成功字段联调；云浏览器直接导航 API 地址返回 `ERR_BLOCKED_BY_CLIENT`，浏览器工具未提供请求响应或 Cookie 导出能力。
+
+官方脚本的来源与 SHA-256 见脱敏核验记录。调用点：`Gt`（列表）、`Kt`（汇总）、`ka`（图表）、`g/L/S`（余额／订阅／账单）、`x/N`（月分母／比例）。
+
 ## 5. 用量明细来源
 
 ### 5.1 本地会话 JSONL
@@ -283,7 +308,7 @@ hitRate       = cachedInput / (uncachedInput + cachedInput) × 100
 
 ### 5.3 账户历史明细
 
-Studio 文档确认逐请求用量页面，但尚未确认第三方读取契约。该适配器必须先取得以下事实：
+Studio 文档及真实登录页面确认逐请求展示，官方网页脚本已定位 CC07–CC09 的候选读取契约，见 4.6。成功响应和账户全量范围仍未确认。该适配器必须取得以下事实：
 
 | 必需信息 | 用途 |
 | --- | --- |
@@ -402,14 +427,14 @@ type UsageRecord = {
 | --- | --- | --- | --- |
 | API01 | 公开接口核验 | 核对官方文档与 1.79.2 发布包；记录四个 HTTP 入口、会话和事件字段及证据等级 | ✔ 完成 |
 | API02 | 账户接口联调 | 用真实个人／组织账户验证 CC01–CC04 的请求、类型、时间单位、空订阅和失败响应，形成脱敏 fixture | 未开始 |
-| API03 | 补齐付款与月额度契约 | 核验 Studio 正常 Billing 请求中的真实字段；验证取消、试用、充值、套餐变更，禁止推算 | 未开始 |
-| API04 | 账户历史明细核验 | 确认正常 Usage 请求的鉴权、分页、模型／软件、缓存和时间字段；验证跨页去重和迟到记录 | 未开始 |
+| API03 | 补齐付款与月额度契约 | 已定位官方 monthlyCreditsGranted 读取与月分母算法；取得成功响应验证额度语义，并继续核验独立付款字段、取消、试用、充值及套餐变更 | 进行中 |
+| API04 | 账户历史明细核验 | 已定位 CC07–CC09、游标及缓存聚合 schema，验证页面分页行为；继续取得成功 JSON，核验历史窗口、软件、缓存、时区、跨页去重和迟到记录 | 进行中 |
 | API05 | 会话适配器 | 按 v3 解析、增量索引与 lineage 去重；验证缓存输入、fork／clone、损坏末行及账户归属 | 未开始 |
 | API06 | 账户适配器与凭据 | 实现 CC01–CC03、字段校验、系统凭据存储、刷新与账户隔离；CC04 保持独立诊断用途 | 未开始 |
 | API07 | 统一统计应用服务 | 按内部契约输出同 revision 汇总和排行；验证时区、精确计算与查询竞态 | 未开始 |
 | API08 | 数据契约验收 | 执行下表并记录预期／实际；接口样本验证后才能把对应能力提升至 V | 未开始 |
 | API09 | 网页额度参考核验 | 核对 Token Monitor 固定提交的 Cookie 流程、CC05／CC06、月额度静态表及作者样本；22 项模拟响应测试通过 | ✔ 完成 |
-| API10 | 网页额度契约联调 | 验证 CC05／CC06 的真实个人／组织上下文、Cookie 到期、字段层级、resetAt=0、无订阅和额度单位；通过后确定网页凭据的应用服务输入 | 未开始 |
+| API10 | 网页额度契约联调 | 已验证登录页面及 CC05／CC06 未认证 401；继续取得成功响应，验证个人／组织上下文、Cookie 到期、字段层级、resetAt=0、无订阅和额度单位 | 进行中 |
 
 | 验收目标 | 必测输入与预期 |
 | --- | --- |
